@@ -1,0 +1,5 @@
+*/venv
+assets/
+.vscode
+
+backend/db.sqlite3
