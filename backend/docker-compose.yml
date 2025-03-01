@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=secret
+    volumes:
+      - mongo_data:/data/db
+
+  django:
+    build: .
+    container_name: django_backend
+    restart: always
+    depends_on:
+      - mongodb
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://admin:secret@mongodb:27017/free_mentors_db?authSource=admin
+    volumes:
+      - .:/app
+
+volumes:
+  mongo_data:

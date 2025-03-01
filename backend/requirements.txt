@@ -1,0 +1,6 @@
+Django
+mongoengine
+graphene-django
+django-graphql-jwt
+bcrypt
+PyJWT

@@ -1,5 +1,5 @@
+import os
 from mongoengine import connect
-
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -7,13 +7,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # connect('free_mentors_db', host='mongodb://peter:peter@123 localhost:27017/free_mentors_db')
-connect(
-    db='free_mentors_db',
-    username='peter',
-    password='peter@123',
-    host='mongodb://localhost:27017/free_mentors_db',
-    authentication_source='admin'
+# connect(
+#     db='free_mentors_db',
+#     username='peter',
+#     password='peter@123',
+#     host='mongodb://localhost:27017/free_mentors_db',
+#     authentication_source='admin'
+# )
+MONGO_URI = os.getenv(
+    "MONGO_URI", "mongodb://admin:secret@mongodb:27017/free_mentors_db?authSource=admin"
 )
+connect('free_mentors_db', host=MONGO_URI)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

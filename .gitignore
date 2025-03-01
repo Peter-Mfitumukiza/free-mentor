@@ -3,3 +3,9 @@ assets/
 .vscode
 
 backend/db.sqlite3
+
+
+# Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
