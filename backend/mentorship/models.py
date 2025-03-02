@@ -36,3 +36,15 @@ class User(me.Document):
         return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
     
     meta = { 'collection': 'users' }
+
+
+class MentorshipSession(me.Document):
+    STATUS_CHOICES = ("PENDING", "ACCEPTED", "REJECTED")
+
+    mentor = me.ReferenceField(User, required=True)
+    mentee = me.ReferenceField(User, required=True)
+    status = me.StringField(choices=STATUS_CHOICES, default='PENDING')
+    questions = me.StringField()   
+    created_at = me.DateTimeField(default=datetime.datetime.now)
+
+    meta = { 'collection': 'mentorship_sessions' }

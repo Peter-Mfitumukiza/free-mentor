@@ -2,7 +2,7 @@ import graphene
 import jwt
 from graphene import ObjectType, String, Boolean, Mutation
 from graphql import GraphQLError
-from .models import User
+from .models import User, MentorshipSession
 from django.conf import settings
 
 def get_authenticated_user(context):
@@ -34,6 +34,13 @@ class UserType(ObjectType):
     expertise = String()
     email = String()
     role = String()
+    created_at = String()
+
+class MentorshipSessionType(ObjectType):
+    id = String()
+    mentee = graphene.Field(UserType)
+    mentor = graphene.Field(UserType)
+    status = String()
     created_at = String()
 
 class RegisterUser(Mutation):
@@ -111,20 +118,90 @@ class ChangeUserRole(Mutation):
         user_to_update.update(role=new_role)
         return ChangeUserRole(success=True, message="Role updated successfully")
 
+class RequestMentorshipSession(Mutation):
+    class Arguments:
+        mentor_email = String(required=True)
+        questions = String(required=False)
+
+    success = Boolean()
+    message = String()
+
+    def mutate(self, info, mentor_email, questions = None):
+        user = get_authenticated_user(info.context)
+
+        if user.role != "USER":
+            raise GraphQLError("Only users can request mentorship sessions")
+
+        mentor = User.objects(email=mentor_email, role="MENTOR").first()
+        if not mentor:
+            return RequestMentorshipSession(success=False, message="Mentor not found")
+
+        session = MentorshipSession(mentee=user, mentor=mentor, questions=questions)
+        session.save()
+
+        return RequestMentorshipSession(success=True, message="Mentorship session requested")
     
+class RespondToMentorshipSession(Mutation):
+    class Arguments:
+        session_id = String(required=True)
+        action = String(required=True)  # "accept" or "reject"
+
+    success = Boolean()
+    message = String()
+
+    def mutate(self, info, session_id, action):
+        mentor = get_authenticated_user(info.context)
+
+        if mentor.role != "MENTOR":
+            raise GraphQLError("Only mentors can respond to session requests")
+
+        session = MentorshipSession.objects(id=session_id, mentor=mentor).first()
+        if not session:
+            return RespondToMentorshipSession(success=False, message="Session not found")
+
+        if action not in ["accept", "reject"]:
+            return RespondToMentorshipSession(success=False, message="Invalid action")
+
+        session.status = "ACCEPTED" if action == "accept" else "REJECTED"
+        session.save()
+
+        return RespondToMentorshipSession(success=True, message=f"Session {action}ed successfully")
+
+
 class Mutation(ObjectType):
     register_user = RegisterUser.Field()
     login_user = LoginUser.Field()
     change_user_role = ChangeUserRole.Field()
+    request_mentorship_session = RequestMentorshipSession.Field()
+    respond_to_mentorship_session = RespondToMentorshipSession.Field()
+
+
 
 class Query(ObjectType):
     default = String(default_value="GraphQL API is working!")
     all_users = graphene.List(UserType, role=String())
+    my_sessions = graphene.List(MentorshipSessionType)
+    get_mentor_by_email = graphene.Field(UserType, email=String(required=True))
 
     def resolve_all_users(self, info, role=None):
         if role:
             return User.objects(role=role)
         return User.objects.all()
+    
+    def resolve_my_sessions(self, info):
+        user = get_authenticated_user(info.context)
+        if user.role == "MENTOR":
+            sessions = MentorshipSession.objects(mentor=user)
+        else:
+            sessions = MentorshipSession.objects(mentee=user)
+
+        return sessions
+    
+    def resolve_get_mentor_by_email(self, info, email):
+        mentor = User.objects(email=email, role="MENTOR").first()
+        if not mentor:
+            raise GraphQLError("Mentor not found")
+        return mentor
 
 
 schema = graphene.Schema(query=Query,mutation=Mutation)
