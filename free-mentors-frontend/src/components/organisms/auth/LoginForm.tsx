@@ -40,6 +40,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       const result = await loginUser(formData.email, formData.password);
+      console.log("Response we have in logging in the user", result);
       
       if (result.success) {
         const userData = {
@@ -50,7 +51,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         };
         
         login(result.token, userData);
-        window.location.href = "/dashboard";
+        // window.location.href = "/dashboard";
       } else {
         setError(result.message || "Login failed. Please check your credentials.");
       }

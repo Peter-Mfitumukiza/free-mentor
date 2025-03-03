@@ -1,6 +1,7 @@
 */venv
 assets/
 .vscode
+node_modules/
 
 backend/db.sqlite3
 

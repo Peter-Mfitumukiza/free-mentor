@@ -8,6 +8,8 @@ import {
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import { MentorCard } from '../../molecules/cards/MentorCard'
+import { useAuth } from "../../../contexts/AuthContext";
+import {requestSession} from "../../../api/graphqlApi";
 
 const mockMentors: Mentor[] = [
   {
@@ -39,6 +41,7 @@ const mockMentors: Mentor[] = [
 export const MentorsList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredMentors, setFilteredMentors] = useState(mockMentors)
+  const { token } = useAuth();
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value.toLowerCase()
@@ -59,9 +62,27 @@ export const MentorsList: React.FC = () => {
     console.log(`View profile of mentor ${mentorId}`)
   }
 
-  const handleRequestSession = (mentorId: string) => {
+  const handleRequestSession = async (mentorId: string) => {
     // Open session request modal or navigate to request page
-    console.log(`Request session with mentor ${mentorId}`)
+    
+    
+    try{
+      console.log(`Request session with mentor ${mentorId}`);
+
+      console.log("All mentors kwanza", filteredMentors);
+
+      const selected_mentor = filteredMentors.find((mentor) => mentor.id === mentorId);
+      console.log("The selected mentor ", selected_mentor);
+
+      // const response = await requestSession(mentorEmail, token);
+
+    }catch(error: any){
+      console.log("Request session error");
+    } finally{
+      setLoading(false);
+    }
+
+
   }
 
   return (

@@ -4,6 +4,7 @@ import { PrimaryInput } from "../../atoms/inputs/TextInput";
 import { RegistrationSteps } from "./RegistrationStep";
 import { LoginForm } from "./LoginForm";
 import { registerUser } from "../../../api/graphqlApi";
+import { toast } from "react-hot-toast";
 
 interface RegisterFormProps {
   updateRightContent: (content: React.ReactNode) => void;
@@ -64,14 +65,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       });
       
       if (result.success) {
-        alert(result.message || "Registration successful! Please login.");
+      toast.success(result.message || "Registration successful! Please login.");
         updateRightContent(<LoginForm updateRightContent={updateRightContent} />);
       } else {
         setError(result.message || "Registration failed. Please try again.");
+        toast.error("Registration failed. Please try again.");
       }
     } catch (error) {
       console.error("Registration error:", error);
       setError(error instanceof Error ? error.message : "An error occurred during registration.");
+      toast.error("An error occured during registration")
     } finally {
       setLoading(false);
     }
