@@ -4,3 +4,4 @@ graphene-django
 django-graphql-jwt
 bcrypt
 PyJWT
+django-cors-headers
