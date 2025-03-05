@@ -20,6 +20,9 @@ import NotFoundPage from "./pages/NotFoundPage";
 const AppRouter: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
 
+  console.log("Am I really autheticated", isAuthenticated);
+  console.log("Who am I ?", user);
+
   const getHomeRedirect = () => {
     if (!isAuthenticated) return "/auth";
 
@@ -29,7 +32,7 @@ const AppRouter: React.FC = () => {
       case UserRole.MENTOR:
         return "/dashboard";
       default:
-        return "/dashboard";
+        return "/admin";
     }
   };
 
