@@ -182,6 +182,7 @@ class Query(ObjectType):
     all_users = graphene.List(UserType, role=String())
     my_sessions = graphene.List(MentorshipSessionType)
     get_mentor_by_email = graphene.Field(UserType, email=String(required=True))
+    get_authenticated_user = graphene.Field(UserType)
 
     def resolve_all_users(self, info, role=None):
         if role:
@@ -202,6 +203,10 @@ class Query(ObjectType):
         if not mentor:
             raise GraphQLError("Mentor not found")
         return mentor
+    
+    def resolve_get_authenticated_user(self, info):
+        user = get_authenticated_user(info.context)
+        return user
 
 
 schema = graphene.Schema(query=Query,mutation=Mutation)
