@@ -127,7 +127,8 @@ const MentorsList: React.FC = () => {
             No mentors match your search criteria.
           </p>
           <button
-            onClick={() => {
+            onClick={
+              () => {
               setSearchTerm("");
               setExpertiseFilter("");
             }}

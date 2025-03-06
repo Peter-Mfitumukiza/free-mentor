@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth, UserRole } from "../../contexts/AuthContext";
-import { getAllUsers } from "../../api/graphqlApi";
+import { getAllUsers, requestSession } from "../../api/graphqlApi";
+import toast from "react-hot-toast";
 
 interface Mentor {
   id: string;
@@ -36,6 +37,36 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleRequestSession = async (mentorEmail: string) => {
+
+    try {
+          const result = await requestSession(mentorEmail, token);
+          console.log("Response we have in requesting the session", result);
+
+          if(result.success) toast.success("Session request sent successfully");
+          
+          // if (result.success) {
+          //   const userData = {
+          //     firstName: "",
+          //     lastName: "",
+          //     email: formData.email,
+          //     role: "USER",
+          //   };
+            
+          //   login(result.token, userData);
+            
+          // } else {
+          //   setError(result.message || "Login failed. Please check your credentials.");
+          // }
+        } catch (error) {
+          console.error("Request session error:", error);
+          setError(error instanceof Error ? error.message : "An error occurred during session request.");
+        } finally {
+          setLoading(false);
+        }
+    
+  }
 
   if (loading) {
     return (
@@ -85,7 +116,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-gray-600 text-sm mb-4">
                   {mentor.bio || "No bio available"}
                 </p>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">
+                <button onClick={() => handleRequestSession(mentor?.email)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">
                   Request Session
                 </button>
               </div>
