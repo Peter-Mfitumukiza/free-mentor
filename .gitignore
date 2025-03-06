@@ -10,3 +10,4 @@ backend/db.sqlite3
 *.pyc
 *.pyo
 __pycache__/
+config.bat

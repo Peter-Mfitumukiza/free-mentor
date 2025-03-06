@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useAuth, UserRole } from "../../contexts/AuthContext";
-import { getAllUsers } from "../../api/graphqlApi";
+import { useDispatch, useSelector } from 'react-redux';
+import { getAllUsers, requestSession } from "../../api/graphqlApi";
+import toast from "react-hot-toast";
+import { Link, useNavigate } from "react-router-dom";
+import { setSelectedMentor } from "../../redux/slices/mentorSlice";
+import { RootState } from "../../redux/store";
 
+// This interface is already defined in your mentorSlice, but including it here for completeness
 interface Mentor {
   id: string;
   firstName: string;
@@ -13,7 +19,13 @@ interface Mentor {
 
 const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
-  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  
+  // Instead of local state, we'll use the Redux store
+  const mentors = useSelector((state: RootState) => state.mentors.mentors);
+  
+  // We still need loading and error states locally since they're UI-specific
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,13 +40,39 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       console.log("Fetching mentors list");
       const mentorsData = await getAllUsers(token!, "MENTOR");
-      setMentors(mentorsData);
+      
+      // Instead of setting local state, dispatch to Redux store
+      // You may need to add an action in your mentorSlice
+      dispatch({ 
+        type: 'mentors/setMentors', 
+        payload: mentorsData 
+      });
+      
     } catch (err) {
       setError("Failed to load mentors. Please try again later.");
       console.error("Error fetching mentors:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRequestSession = async (mentorEmail: string) => {
+    try {
+      const result = await requestSession(mentorEmail, token);
+      console.log("Response we have in requesting the session", result);
+
+      if(result.success) toast.success("Session request sent successfully");
+    } catch (error) {
+      console.error("Request session error:", error);
+      setError(error instanceof Error ? error.message : "An error occurred during session request.");
+    }
+  };
+  
+  const handleSelectMentor = (mentor: Mentor) => {
+    // Update the selected mentor in Redux
+    dispatch(setSelectedMentor(mentor));
+    // Navigate to mentor details page
+    navigate(`/mentorProfile`);
   };
 
   if (loading) {
@@ -76,16 +114,24 @@ const Dashboard: React.FC = () => {
                 key={mentor.id}
                 className="bg-white shadow rounded-lg p-6 border border-gray-100"
               >
-                <h3 className="font-bold text-lg text-gray-800">
-                  {mentor.firstName} {mentor.lastName}
-                </h3>
-                <p className="text-blue-600 text-sm mb-3">
-                  {mentor.expertise || "General Mentoring"}
-                </p>
-                <p className="text-gray-600 text-sm mb-4">
-                  {mentor.bio || "No bio available"}
-                </p>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">
+                <div 
+                  onClick={() => handleSelectMentor(mentor)}
+                  className="cursor-pointer"
+                >
+                  <h3 className="font-bold text-lg text-gray-800">
+                    {mentor.firstName} {mentor.lastName}
+                  </h3>
+                  <p className="text-blue-600 text-sm mb-3">
+                    {mentor.expertise || "General Mentoring"}
+                  </p>
+                  <p className="text-gray-600 text-sm mb-4">
+                    {mentor.bio || "No bio available"}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => handleRequestSession(mentor?.email)} 
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors"
+                >
                   Request Session
                 </button>
               </div>
