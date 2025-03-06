@@ -16,6 +16,7 @@ import UserProfile from "./pages/Dashboard/UserProfile";
 import AdminPanel from "./pages/Dashboard/AdminPanel";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import { MentorProfile } from "./components/organisms/mentors/MentorsProfile";
 
 const AppRouter: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
@@ -75,6 +76,14 @@ const AppRouter: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Mentor Profile */}
+
+      <Route path="/mentorProfile" element={
+        <ProtectedRoute>
+          <MentorProfile />
+        </ProtectedRoute>
+      } />
 
       {/* User Profile */}
       <Route
