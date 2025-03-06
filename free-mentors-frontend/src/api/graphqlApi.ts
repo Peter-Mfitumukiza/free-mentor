@@ -36,7 +36,7 @@ export const registerUser = async (userData: {
     try {
       console.log('Mutation:', mutation);
       
-      const response = await fetch('http://localhost:8000/graphql/', {
+      const response = await fetch(BASE_END_POINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,6 +79,7 @@ export const registerUser = async (userData: {
   };
   
   export const loginUser = async (email: string, password: string) => {
+
     const mutation = `
       mutation {
         loginUser(
@@ -94,7 +95,7 @@ export const registerUser = async (userData: {
     
     try {
       console.log('Logging in user:', email);
-      const response = await fetch('http://localhost:8000/graphql/', {
+      const response = await fetch(BASE_END_POINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,6 +117,8 @@ export const registerUser = async (userData: {
       throw error;
     }
   };
+
+
   
   export const getAllUsers = async (token: string, role?: string) => {
 
@@ -158,13 +161,55 @@ export const registerUser = async (userData: {
       throw error;
     }
   };
+
+  export const getAutheticatedUser = async (token: string, role?: string) => {
+
+    const query = `
+      query {
+        allUsers${role ? `(role: "${role}")` : ''} {
+          firstName
+          lastName
+          email
+          role
+          bio
+          address
+          occupation
+          expertise
+        }
+      }
+    `;
+    
+    try {
+      console.log('Fetching the autheticated user:', role || 'all');
+      const response = await fetch(BASE_END_POINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ query }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        throw new Error(result.errors[0].message);
+      }
+      
+      return result.data.allUsers;
+    } catch (error) {
+      console.error('Get users error:', error);
+      throw error;
+    }
+  };
   
   export const changeUserRole = async (userEmail: string, newRole: string, token: string) => {
     const mutation = `
       mutation {
         changeUserRole(
-          user_email: "${userEmail}",
-          new_role: "${newRole}"
+          userEmail: "${userEmail}",
+          newRole: "${newRole}"
         ) {
           success
           message
@@ -174,7 +219,7 @@ export const registerUser = async (userData: {
     
     try {
       console.log('Changing role for user:', userEmail, 'to', newRole);
-      const response = await fetch('/graphql', {
+      const response = await fetch(BASE_END_POINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

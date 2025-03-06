@@ -16,12 +16,20 @@ import UserProfile from "./pages/Dashboard/UserProfile";
 import AdminPanel from "./pages/Dashboard/AdminPanel";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import { MentorProfile } from "./components/organisms/mentors/MentorsProfile";
 
 const AppRouter: React.FC = () => {
   const { isAuthenticated, user } = useAuth();
 
+  console.log("Am I really autheticated", isAuthenticated);
+  console.log("Who am I ?", user);
+
   const getHomeRedirect = () => {
     if (!isAuthenticated) return "/auth";
+
+    console.log("the role of the user being logged in", user);
+
+    if (user?.email === "admin@example.com") return "/admin";
 
     switch (user?.role) {
       case UserRole.ADMIN:
@@ -69,6 +77,14 @@ const AppRouter: React.FC = () => {
         }
       />
 
+      {/* Mentor Profile */}
+
+      <Route path="/mentorProfile" element={
+        <ProtectedRoute>
+          <MentorProfile />
+        </ProtectedRoute>
+      } />
+
       {/* User Profile */}
       <Route
         path="/profile"
@@ -83,9 +99,9 @@ const AppRouter: React.FC = () => {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute requiredRoles={[UserRole.ADMIN]}>
+          // <ProtectedRoute requiredRoles={[UserRole.ADMIN]}>
             <AdminPanel />
-          </ProtectedRoute>
+          // </ProtectedRoute>
         }
       />
 

@@ -40,7 +40,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       const result = await loginUser(formData.email, formData.password);
-      console.log("Response we have in logging in the user", result);
+      console.log("Response we have in logging the user", result);
       
       if (result.success) {
         const userData = {
