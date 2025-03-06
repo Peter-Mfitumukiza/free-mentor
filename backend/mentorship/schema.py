@@ -166,6 +166,41 @@ class RespondToMentorshipSession(Mutation):
         session.save()
 
         return RespondToMentorshipSession(success=True, message=f"Session {action}ed successfully")
+    
+class UpdateUserProfile(Mutation):
+    class Arguments:
+        firstName = String(required=False)
+        lastName = String(required=False)
+        bio = String(required=False)
+        address = String(required=False)
+        occupation = String(required=False)
+        expertise = String(required=False)
+
+    success = Boolean()
+    message = String()
+
+    def mutate(self, info, firstName=None, lastName=None, bio=None, address=None, occupation=None, expertise=None):
+        user = get_authenticated_user(info.context)
+
+        update_fields = {}
+        if firstName:
+            update_fields["firstName"] = firstName
+        if lastName:
+            update_fields["lastName"] = lastName
+        if bio:
+            update_fields["bio"] = bio
+        if address:
+            update_fields["address"] = address
+        if occupation:
+            update_fields["occupation"] = occupation
+        if expertise:
+            update_fields["expertise"] = expertise
+
+        if not update_fields:
+            return UpdateUserProfile(success=False, message="No changes provided")
+
+        user.update(**update_fields)
+        return UpdateUserProfile(success=True, message="Profile updated successfully")
 
 
 class Mutation(ObjectType):
@@ -174,7 +209,7 @@ class Mutation(ObjectType):
     change_user_role = ChangeUserRole.Field()
     request_mentorship_session = RequestMentorshipSession.Field()
     respond_to_mentorship_session = RespondToMentorshipSession.Field()
-
+    update_user_profile = UpdateUserProfile.Field()
 
 
 class Query(ObjectType):
