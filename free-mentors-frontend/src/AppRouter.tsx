@@ -1,40 +1,75 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, UserRole } from "./contexts/AuthContext";
 
-// Auth Components
 import { AuthLayout } from "./components/organisms/AuthLayout";
 import { LoginForm } from "./components/organisms/auth/LoginForm";
 
-// Protected Route
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 
-// Pages
 import Dashboard from "./pages/Dashboard/Dashboard";
 import MentorsList from "./pages/Dashboard/MentorsList";
 import UserProfile from "./pages/Dashboard/UserProfile";
 import AdminPanel from "./pages/Dashboard/AdminPanel";
+import MentorshipRequests from "./pages/Dashboard/MentorshipRequests";
+import MyMentorshipSessions from "./pages/Dashboard/MyMentorshipSessions";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const AppRouter: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
+  const location = useLocation();
 
-  console.log("Am I really autheticated", isAuthenticated);
-  console.log("Who am I ?", user);
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  const userHasValidRole = user && Object.values(UserRole).includes(user.role as UserRole);
 
   const getHomeRedirect = () => {
     if (!isAuthenticated) return "/auth";
-
-    console.log("the role of the user being logged in", user);
-
-    if (user?.email === "admin@example.com") return "/admin";
-
+    if (!userHasValidRole) return "/unauthorized";
+  
+    const currentPath = location.pathname;
+    
     switch (user?.role) {
       case UserRole.ADMIN:
+        if (
+          currentPath === '/admin' ||
+          currentPath === '/dashboard' ||
+          currentPath === '/mentors' ||
+          currentPath === '/profile'
+        ) {
+          return currentPath;
+        }
         return "/admin";
+        
       case UserRole.MENTOR:
+        if (
+          currentPath === '/dashboard' ||
+          currentPath === '/mentors' ||
+          currentPath === '/mentorship-requests' ||
+          currentPath === '/profile'
+        ) {
+          return currentPath;
+        }
         return "/dashboard";
+        
+      case UserRole.USER:
+        if (
+          currentPath === '/dashboard' ||
+          currentPath === '/mentors' ||
+          currentPath === '/my-sessions' ||
+          currentPath === '/profile'
+        ) {
+          return currentPath;
+        }
+        return "/dashboard";
+        
       default:
         return "/dashboard";
     }
@@ -42,7 +77,6 @@ const AppRouter: React.FC = () => {
 
   return (
     <Routes>
-      {/* Authentication Route */}
       <Route
         path="/auth"
         element={
@@ -56,56 +90,67 @@ const AppRouter: React.FC = () => {
         }
       />
 
-      {/* Dashboard - Available to all logged-in users */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRoles={[UserRole.USER, UserRole.MENTOR, UserRole.ADMIN]}>
             <Dashboard />
           </ProtectedRoute>
         }
       />
 
-      {/* Mentors List - Available to all logged-in users */}
       <Route
         path="/mentors"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRoles={[UserRole.USER, UserRole.MENTOR, UserRole.ADMIN]}>
             <MentorsList />
           </ProtectedRoute>
         }
       />
 
-      {/* User Profile */}
       <Route
-        path="/profile"
+        path="/my-sessions"
         element={
-          <ProtectedRoute>
-            <UserProfile />
+          <ProtectedRoute requiredRoles={[UserRole.USER]}>
+            <MyMentorshipSessions />
           </ProtectedRoute>
         }
       />
 
-      {/* Admin Panel - Only for Admin */}
       <Route
-        path="/admin"
+        path="/mentorship-requests"
         element={
-          // <ProtectedRoute requiredRoles={[UserRole.ADMIN]}>
-            <AdminPanel />
-          // </ProtectedRoute>
-        }
-      />
+          <ProtectedRoute requiredRoles={[UserRole.MENTOR]}>
+          <MentorshipRequests />
+        </ProtectedRoute>
+      }
+    />
 
-      {/* Unauthorized Access Page */}
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    <Route
+      path="/profile"
+      element={
+        <ProtectedRoute requiredRoles={[UserRole.USER, UserRole.MENTOR, UserRole.ADMIN]}>
+          <UserProfile />
+        </ProtectedRoute>
+      }
+    />
 
-      {/* Home Redirect */}
-      <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
+    <Route
+      path="/admin/*"
+      element={
+        <ProtectedRoute requiredRoles={[UserRole.ADMIN]}>
+          <AdminPanel />
+        </ProtectedRoute>
+      }
+    />
 
-      {/* 404 Not Found */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-  );
+    <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+    <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
+
+    <Route path="*" element={<NotFoundPage />} />
+  </Routes>
+);
 };
 
 export default AppRouter;

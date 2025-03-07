@@ -5,6 +5,7 @@ import { RegistrationSteps } from "./RegistrationStep";
 import { LoginForm } from "./LoginForm";
 import { registerUser } from "../../../api/graphqlApi";
 import { toast } from "react-hot-toast";
+import { Box } from "@mui/material";
 
 interface RegisterFormProps {
   updateRightContent: (content: React.ReactNode) => void;
@@ -103,20 +104,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   }, [currentStep, parentHandleBackNavigation]);
 
   return (
-    <div className="w-full max-w-md">
-      <h2 className="text-xl font-bold text-text-primary mb-3">Create Account</h2>
-      <p className="mb-10 text-text-secondary text-xs">Fill in your details to create an account</p>
+    <div className="w-full max-w-xl">
+      <h2 className="text-xl font-bold mb-3 text-text-primary">Create Account</h2>
+      <p className="mb-10 text-text-secondary text-[13px]">
+        Fill in your details to create an account
+      </p>
 
       {error && (
-        <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-xs">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-xs">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-10">
+      <form onSubmit={handleSubmit}>
         {currentStep === 1 && (
-          <>
-            <div className="mb-8">
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="First Name"
                 id="firstName"
@@ -128,9 +131,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="Last Name"
                 id="lastName"
@@ -142,9 +145,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box>
               <PrimaryInput
                 label="Email Address"
                 type="email"
@@ -157,25 +160,27 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
-
-            <PrimaryButton 
-              type="button" 
-              variant="contained" 
-              fullWidth 
-              size="large" 
-              onClick={handleNext} 
-              className="mt-4"
-              disabled={loading}
-            >
-              Next
-            </PrimaryButton>
-          </>
+            </Box>
+            
+            <Box sx={{ mt: 4 }}>
+              <PrimaryButton 
+                type="button" 
+                variant="contained" 
+                fullWidth 
+                size="large" 
+                onClick={handleNext}
+                className="bg-[#00408a] hover:bg-[#003371]"
+                disabled={loading}
+              >
+                Next
+              </PrimaryButton>
+            </Box>
+          </Box>
         )}
 
         {currentStep === 2 && (
-          <>
-            <div className="mb-8">
+          <Box sx={{ mb: 4 }}>
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="Password"
                 type="password"
@@ -188,9 +193,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="Confirm Password"
                 type="password"
@@ -203,9 +208,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="Bio (Optional)"
                 id="bio"
@@ -216,9 +221,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="Address (Optional)"
                 id="address"
@@ -229,9 +234,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box sx={{ mb: 2 }}>
               <PrimaryInput
                 label="Occupation (Optional)"
                 id="occupation"
@@ -242,9 +247,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
+            </Box>
 
-            <div className="mb-8">
+            <Box>
               <PrimaryInput
                 label="Expertise (Optional)"
                 id="expertise"
@@ -255,9 +260,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 className="w-full text-sm"
                 disabled={loading}
               />
-            </div>
-
-            <div className="flex space-x-4 mt-4">
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
               <PrimaryButton 
                 type="button" 
                 variant="outlined" 
@@ -274,16 +279,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 variant="contained" 
                 fullWidth 
                 size="large"
+                className="bg-[#00408a] hover:bg-[#003371]"
                 disabled={loading}
               >
                 {loading ? "Creating Account..." : "Create Account"}
               </PrimaryButton>
-            </div>
-          </>
+            </Box>
+          </Box>
         )}
       </form>
       
-      <div className="mt-12">
+      <div className="mt-8">
         <RegistrationSteps currentStep={currentStep} totalSteps={2} />
       </div>
     </div>
