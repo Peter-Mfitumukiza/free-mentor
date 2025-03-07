@@ -1,7 +1,5 @@
 const BASE_END_POINT = "http://localhost:8000/graphql/"
 
-
-
 export const registerUser = async (userData: {
     firstName: string;
     lastName: string;
@@ -13,7 +11,6 @@ export const registerUser = async (userData: {
     expertise?: string;
   }) => {
     const { firstName, lastName, email, password, bio, address, occupation, expertise } = userData;
-
     
     const mutation = `
       mutation {
@@ -79,7 +76,6 @@ export const registerUser = async (userData: {
   };
   
   export const loginUser = async (email: string, password: string) => {
-
     const mutation = `
       mutation {
         loginUser(
@@ -117,11 +113,8 @@ export const registerUser = async (userData: {
       throw error;
     }
   };
-
-
   
   export const getAllUsers = async (token: string, role?: string) => {
-
     const query = `
       query {
         allUsers${role ? `(role: "${role}")` : ''} {
@@ -163,7 +156,6 @@ export const registerUser = async (userData: {
   };
 
   export const getAutheticatedUser = async (token: string, role?: string) => {
-
     const query = `
       query {
         allUsers${role ? `(role: "${role}")` : ''} {
@@ -242,6 +234,42 @@ export const registerUser = async (userData: {
     }
   };
 
+  export const respondToMentorshipSession = async (action: string, sessionId: string, token: string) => {
+    const mutation = `
+      mutation {
+        respondToMentorshipSession(
+          action: "${action}",
+          sessionId: "${sessionId}"
+        ) {
+          success
+          message
+        }
+      }
+    `;
+    
+    try {
+      const response = await fetch(BASE_END_POINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ query: mutation }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        throw new Error(result.errors[0].message);
+      }
+      
+      return result.data.respondToMentorshipSession;
+    } catch (error) {
+      console.error('Error responding to mentorship session:', error);
+      throw error;
+    }
+  };
 
   export const requestSession = async (mentorEmail: string, token: string) => {
     const mutation = `
@@ -272,9 +300,59 @@ export const registerUser = async (userData: {
         throw new Error(result.errors[0].message);
       }
       
-      return result.data.changeUserRole;
+      return result.data.requestMentorshipSession;
     } catch (error) {
-      console.error('Change role error:', error);
+      console.error('Session request error:', error);
+      throw error;
+    }
+  };
+
+  export const getMySessions = async (token: string, roleType?: 'MENTOR' | 'MENTEE') => {
+    const query = `
+      query {
+        mySessions${roleType ? `(roleType: "${roleType}")` : ''} {
+          id
+          createdAt
+          status
+          mentee {
+            firstName
+            lastName
+            email
+            expertise
+            occupation
+          }
+          mentor {
+            firstName
+            lastName
+            email
+            expertise
+            occupation
+          }
+        }
+      }
+    `;
+    
+    try {
+      console.log(`Fetching mentorship sessions for ${roleType || 'all'}`);
+      const response = await fetch(BASE_END_POINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ query }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.errors) {
+        console.error('GraphQL errors:', result.errors);
+        throw new Error(result.errors[0].message);
+      }
+      
+      return result.data.mySessions || [];
+    } catch (error) {
+      console.error('Get sessions error:', error);
       throw error;
     }
   };

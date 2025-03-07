@@ -1,4 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { getAllUsers } from '../api/graphqlApi';
+import { toast } from 'react-hot-toast';
 
 export enum UserRole {
   USER = 'USER',
@@ -38,60 +40,61 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-const CURRENT_USER_QUERY = `
-  query {
-    currentUser {
-      id
-      firstName
-      lastName
-      email
-      role
-      bio
-      address
-      occupation
-      expertise
-    }
-  }
-`;
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // More robust user data fetching
   const fetchUserData = async (authToken: string) => {
     try {
-      console.log('Fetching user data with token:', authToken);
-      const response = await fetch('http://localhost:8000/graphql/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          query: CURRENT_USER_QUERY
-        })
-      });
+      const users = await getAllUsers(authToken);
+      
+      const storedUserData = localStorage.getItem('userData');
+      let currentUser = null;
 
-      if (!response.ok) {
-        console.error('Network error:', response.status);
-        throw new Error(`Network response was not ok: ${response.status}`);
+      if (storedUserData) {
+        try {
+          const parsedStoredUser = JSON.parse(storedUserData);
+          
+          currentUser = users.find(
+            (u) => u.email === parsedStoredUser.email
+          );
+        } catch (e) {
+          console.error('Error parsing stored user data', e);
+        }
+      }
+
+      if (!currentUser && users.length > 0) {
+        console.warn('No user found matching stored email. Using first user as fallback.');
+        currentUser = users[0];
       }
       
-      const data = await response.json();
-      console.log('User data response:', data);
-      
-      if (data.data && data.data.currentUser) {
-        setUser(data.data.currentUser);
+      if (currentUser) {
+        if (!Object.values(UserRole).includes(currentUser.role)) {
+          console.error('Invalid user role:', currentUser.role);
+          return false;
+        }
+        
+        const updatedUserData = {
+          id: currentUser.id,
+          firstName: currentUser.firstName,
+          lastName: currentUser.lastName,
+          email: currentUser.email,
+          role: currentUser.role,
+          bio: currentUser.bio,
+          address: currentUser.address,
+          occupation: currentUser.occupation,
+          expertise: currentUser.expertise
+        };
+
+        setUser(updatedUserData);
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
         setIsAuthenticated(true);
         return true;
       } else {
-        console.error('Invalid user data response:', data);
-        if (data.errors) {
-          console.error('GraphQL errors:', data.errors);
-        }
+        console.error('No matching user found or authentication failed');
         return false;
       }
     } catch (error) {
@@ -100,30 +103,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Login function - store user data in localStorage as well
   const login = (authToken: string, userData: User) => {
-    console.log('Logging in with token:', authToken);
+    const fullUserData = {
+      id: userData.id,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      role: userData.role,
+      bio: userData.bio,
+      address: userData.address,
+      occupation: userData.occupation,
+      expertise: userData.expertise
+    };
+    
     localStorage.setItem('token', authToken);
-    // Also store user data to avoid unnecessary fetching
-    localStorage.setItem('userData', JSON.stringify(userData));
+    localStorage.setItem('userData', JSON.stringify(fullUserData));
+    
     setToken(authToken);
-    setUser(userData);
+    setUser(fullUserData);
     setIsAuthenticated(true);
     setLoading(false);
+
+    toast.success(`Welcome, ${fullUserData.firstName}!`);
   };
 
-  // Logout function
   const logout = () => {
-    console.log('Logging out');
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
     setLoading(false);
+
+    toast.success('You have been logged out.');
   };
 
-  // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem('token');
@@ -136,26 +150,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setToken(storedToken);
       
-      // If we have cached user data, use it immediately to avoid loading state
       if (storedUserData) {
         try {
           const parsedUserData = JSON.parse(storedUserData);
-          setUser(parsedUserData);
-          setIsAuthenticated(true);
+          
+          if (parsedUserData && parsedUserData.role) {
+            setUser(parsedUserData);
+            setIsAuthenticated(true);
+          }
         } catch (e) {
           console.error('Error parsing stored user data', e);
         }
       }
       
-      // Verify the token is still valid by fetching fresh user data
-      const success = await fetchUserData(storedToken);
-
-      console.log("the success pe", success);
-      console.log("The stored token", storedToken);
-      
-      if (!success) {
-        // Token was invalid or expired
-        // logout();
+      try {
+        const success = await fetchUserData(storedToken);
+        
+        if (!success) {
+          logout();
+        }
+      } catch (error) {
+        console.error('Authentication verification failed:', error);
+        logout();
       }
       
       setLoading(false);

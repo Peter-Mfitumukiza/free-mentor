@@ -4,6 +4,7 @@ import { PrimaryInput } from "../../atoms/inputs/TextInput";
 import { RegisterForm } from "./Register";
 import { useAuth } from "../../../contexts/AuthContext";
 import { loginUser } from "../../../api/graphqlApi";
+import { Box } from "@mui/material";
 
 interface LoginFormProps {
   updateRightContent: (content: React.ReactNode) => void;
@@ -12,7 +13,6 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ 
   updateRightContent,
-  handleBackNavigation 
 }) => {
   const { login } = useAuth();
   const [formData, setFormData] = useState({
@@ -68,68 +68,70 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-xl">
       <h2 className="text-xl font-bold mb-3 text-text-primary">Login</h2>
-      <p className="mb-8 text-text-secondary text-xs">
+      <p className="mb-10 text-text-secondary text-[13px]">
         Enter your login credentials to access your account
       </p>
 
       {error && (
-        <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-xs">
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-xs">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div>
-          <PrimaryInput
-            label="Email"
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-            fullWidth
-            className="w-full text-sm"
-            disabled={loading}
-          />
-        </div>
+      <form onSubmit={handleSubmit}>
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 2 }}>
+            <PrimaryInput
+              label="Email"
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+              fullWidth
+              className="w-full text-sm"
+              disabled={loading}
+            />
+          </Box>
 
-        <div>
-          <PrimaryInput
-            label="Password"
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            required
-            fullWidth
-            className="w-full text-sm"
-            disabled={loading}
-          />
-        </div>
+          <Box>
+            <PrimaryInput
+              label="Password"
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              fullWidth
+              className="w-full text-sm"
+              disabled={loading}
+            />
+          </Box>
+        </Box>
 
         <PrimaryButton 
           type="submit" 
           variant="contained" 
           fullWidth 
           size="large" 
-          className="mt-4"
+          className="bg-[#00408a] hover:bg-[#003371]"
           disabled={loading}
         >
           {loading ? "Logging in..." : "Login"}
         </PrimaryButton>
       </form>
 
-      <div className="text-center mt-10">
-        <p className="text-text-secondary text-xs mb-2">
+      <div className="text-center mt-8">
+        <p className="text-text-secondary text-[13px] mb-2">
           Don't have an account?{" "}
           
           <a href="#"
             onClick={handleCreateAccount}
-            className="text-primary hover:text-primary-dark transition-colors"
+            className="text-[#00408a] hover:text-[#003371] transition-colors"
           >
             Create Account
           </a>

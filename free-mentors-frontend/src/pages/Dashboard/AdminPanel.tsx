@@ -1,6 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAuth, UserRole } from "../../contexts/AuthContext";
 import { getAllUsers, changeUserRole } from "../../api/graphqlApi";
+import { 
+  Box, 
+  Typography, 
+  Paper, 
+  Alert
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import SidebarLayout from "../../components/atoms/sidebar/Sidebar";
+import { toast } from "react-hot-toast";
+import UserStats from "../../components/molecules/cards/UserStats";
+import UserTable from "../../components/molecules/table/UserTable";
+import FilterToolbar from "../../components/atoms/FilterToolbar";
+import UnauthorizedPage from "../UnauthorizedPage";
 
 interface User {
   id: string;
@@ -13,29 +26,62 @@ interface User {
   occupation?: string;
 }
 
+const PageContainer = styled(Box)({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  paddingLeft: '20px',
+  paddingRight: '20px',
+});
+
+const HeaderSection = styled(Paper)({
+  borderRadius: '8px',
+  boxShadow: 'none',
+  overflow: 'hidden',
+  border: '1px solid #e5e7eb',
+  backgroundColor: '#f5f7fa',
+});
+
+const HeaderContent = styled(Box)({
+  padding: '20px 24px',
+});
+
+const TableSection = styled(Paper)({
+  borderRadius: '8px',
+  boxShadow: 'none',
+  overflow: 'hidden',
+  border: '1px solid #e5e7eb',
+  backgroundColor: 'white',
+});
+
 const AdminPanel: React.FC = () => {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [isRoleMenuOpen, setIsRoleMenuOpen] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    if (token) {
+    if (token && user?.role === UserRole.ADMIN) {
       fetchUsers();
     }
-  }, [token]);
+  }, [token, user]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log("Fetching all users");
+      setError(null);
       const usersData = await getAllUsers(token!);
       setUsers(usersData);
     } catch (err) {
-      setError("Failed to load users. Please try again later.");
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "Failed to load users. Please try again later.";
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
@@ -45,29 +91,38 @@ const AdminPanel: React.FC = () => {
   const handleRoleChange = async (email: string, newRole: string) => {
     try {
       setActionInProgress(email);
-      console.log(`Changing role for ${email} to ${newRole}`);
+      setIsRoleMenuOpen({ ...isRoleMenuOpen, [email]: false });
       const result = await changeUserRole(email, newRole, token!);
 
       if (result.success) {
-        // Update local state
         setUsers((prevUsers) =>
           prevUsers.map((user) =>
             user.email === email ? { ...user, role: newRole } : user
           )
         );
+        toast.success(`Role updated successfully`);
       } else {
-        setError(result.message || "Failed to change user role");
+        const errorMessage = result.message || "Failed to change user role";
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("Error changing role:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : "An error occurred";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setActionInProgress(null);
     }
   };
 
-  // Filter users based on search term and role
-  const filteredUsers = React.useMemo(() => {
+  if (user?.role !== UserRole.ADMIN) {
+    return <UnauthorizedPage />;
+  }
+
+  const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
         searchTerm === "" ||
@@ -82,171 +137,104 @@ const AdminPanel: React.FC = () => {
     });
   }, [users, searchTerm, roleFilter]);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const userCounts = useMemo(() => {
+    const counts = {
+      total: users.length,
+      admin: users.filter(user => user.role === 'ADMIN').length,
+      mentor: users.filter(user => user.role === 'MENTOR').length,
+      mentee: users.filter(user => user.role === 'USER').length,
+    };
+    return counts;
+  }, [users]);
+
+  const handleDownload = () => {
+    const headers = ['First Name', 'Last Name', 'Email', 'Role', 'Occupation'];
+    const csvRows = [headers];
+    
+    users.forEach(user => {
+      const row = [
+        user.firstName,
+        user.lastName,
+        user.email,
+        user.role === 'USER' ? 'Mentee' : user.role.charAt(0) + user.role.slice(1).toLowerCase(),
+        user.occupation || ''
+      ];
+      csvRows.push(row);
+    });
+    
+    const csvString = csvRows.map(row => row.map(cell => 
+      `"${cell}"`
+    ).join(',')).join('\n');
+    
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'users_data.xlsx');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Excel file downloaded successfully");
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Admin Panel</h1>
-        <p className="text-gray-600">Manage users and permissions</p>
-      </header>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
-          {error}
-          <button
-            className="ml-2 text-red-700 hover:text-red-900"
-            onClick={() => setError(null)}
+    <SidebarLayout>
+      <PageContainer sx={{ paddingTop: '10px' }}>
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ borderRadius: '6px', boxShadow: 'none', border: '1px solid #FECACA' }}
+            onClose={() => setError(null)}
           >
-            Dismiss
-          </button>
-        </div>
-      )}
+            {error}
+          </Alert>
+        )}
 
-      <div className="mb-8 flex flex-col md:flex-row gap-4">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search users by name or email..."
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        <HeaderSection>
+          <HeaderContent>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box>
+                <Typography variant="h6" fontWeight={600} fontSize={18}>
+                  User Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary" fontSize={14} sx={{ mt: 0.5 }}>
+                  Manage platform users and their roles
+                </Typography>
+              </Box>
+            </Box>
+
+            <UserStats userCounts={userCounts} />
+          </HeaderContent>
+        </HeaderSection>
+
+        <TableSection>
+          <FilterToolbar 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+            fetchUsers={fetchUsers}
+            handleDownload={handleDownload}
           />
-        </div>
 
-        <div className="w-full md:w-48">
-          <select
-            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="">All Roles</option>
-            <option value="USER">USER</option>
-            <option value="MENTOR">MENTOR</option>
-            <option value="ADMIN">ADMIN</option>
-          </select>
-        </div>
-
-        <button
-          onClick={fetchUsers}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
-        >
-          Refresh
-        </button>
-      </div>
-
-      <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Name
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Email
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Role
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">
-                      {user.firstName} {user.lastName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{user.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${
-                        user.role === "ADMIN"
-                          ? "bg-purple-100 text-purple-800"
-                          : user.role === "MENTOR"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <select
-                      className="mr-3 p-1 border border-gray-300 rounded"
-                      value=""
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          handleRoleChange(user.email, e.target.value);
-                          e.target.value = "";
-                        }
-                      }}
-                      disabled={actionInProgress === user.email}
-                    >
-                      <option value="">Change role</option>
-                      {Object.values(UserRole).map(
-                        (role) =>
-                          role !== user.role && (
-                            <option key={role} value={role}>
-                              {role}
-                            </option>
-                          )
-                      )}
-                    </select>
-                    {actionInProgress === user.email && (
-                      <span className="text-sm text-gray-500">
-                        Processing...
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {filteredUsers.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No users match your search criteria.</p>
-          <button
-            onClick={() => {
-              setSearchTerm("");
-              setRoleFilter("");
-            }}
-            className="mt-4 text-blue-500 hover:underline"
-          >
-            Clear filters
-          </button>
-        </div>
-      )}
-    </div>
+          <UserTable 
+            users={filteredUsers}
+            handleRoleChange={handleRoleChange}
+            actionInProgress={actionInProgress}
+            isRoleMenuOpen={isRoleMenuOpen}
+            handleRoleButtonClick={(email: string) => 
+              setIsRoleMenuOpen({ 
+                ...isRoleMenuOpen, 
+                [email]: !isRoleMenuOpen[email] 
+              })
+            }
+          />
+        </TableSection>
+      </PageContainer>
+    </SidebarLayout>
   );
 };
 

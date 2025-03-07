@@ -1,13 +1,77 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import React from 'react';
+import { Button as MuiButton } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
-interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'contained' | 'outlined';
+// Styled Material UI Button with exact original colors
+const StyledButton = styled(MuiButton)(() => ({
+  textTransform: 'none',
+  fontWeight: 500,
+  boxShadow: 'none',
+  borderRadius: '6px', // Default rounded
+  '&.MuiButton-containedPrimary': {
+    backgroundColor: '#1A5FFF',
+    color: 'white',
+    '&:hover': {
+      backgroundColor: '#1A3D94',
+    },
+    '&:focus': {
+      boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.5)', // Focus ring equivalent
+    },
+  },
+  '&.MuiButton-outlinedPrimary': {
+    borderWidth: '2px',
+    borderColor: '#1A5FFF',
+    color: '#1A5FFF',
+    '&:hover': {
+      backgroundColor: 'rgba(26, 95, 255, 0.04)',
+      borderColor: '#1A5FFF',
+    },
+    '&:focus': {
+      boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3)', // Focus ring equivalent
+    },
+  },
+  '&.MuiButton-login': {
+    backgroundColor: '#004aad',
+    color: 'white',
+    borderRadius: '6px',
+    '&:hover': {
+      backgroundColor: '#003c8a',
+    },
+  },
+  '&.MuiButton-openAccount': {
+    backgroundColor: '#0063cc',
+    color: 'white',
+    borderRadius: '6px',
+    '&:hover': {
+      backgroundColor: '#004fa3',
+    },
+  },
+  '&.MuiButton-sizeLarge': {
+    padding: '14px 20px', // py-4 px-5
+    fontSize: '14px', // text-base
+  },
+  '&.MuiButton-sizeMedium': {
+    padding: '12px 20px', // py-3 px-5
+    fontSize: '14px', // text-base
+  },
+  '&.MuiButton-sizeSmall': {
+    padding: '8px 16px', // py-2 px-4
+    fontSize: '12px', // text-sm
+  },
+}));
+
+interface PrimaryButtonProps {
+  variant?: 'contained' | 'outlined' | 'login' | 'openAccount';
   size?: 'small' | 'medium' | 'large';
   fullWidth?: boolean;
   children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
 }
 
-export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   variant = 'contained',
   size = 'medium',
   fullWidth = false,
@@ -15,29 +79,32 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = 'rounded font-medium transition-colors focus:outline-none';
-  
-  const variantStyles = {
-    contained: 'bg-[#1A5FFF] text-white hover:bg-[#1A3D94] focus:ring-2 focus:ring-blue-300',
-    outlined: 'border-2 border-[#1A5FFF] text-[#1A5FFF] bg-transparent hover:bg-blue-50 focus:ring-2 focus:ring-blue-200',
+  // Map our custom variants to Material UI variants
+  const getMuiVariant = () => {
+    if (variant === 'outlined') return 'outlined';
+    return 'contained'; // Default to contained for all other variants
   };
-  
-  const sizeStyles = {
-    small: 'py-1 px-3 text-sm',
-    medium: 'py-2 px-4',
-    large: 'py-3 px-6',
+
+  // Add custom class for our special variants
+  const getCustomClass = () => {
+    if (variant === 'login') return 'MuiButton-login';
+    if (variant === 'openAccount') return 'MuiButton-openAccount';
+    return '';
   };
-  
-  const widthStyles = fullWidth ? 'w-full' : '';
-  
-  const buttonStyles = `${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${widthStyles} ${className}`;
-  
+
   return (
-    <button
-      className={buttonStyles}
+    <StyledButton
+      variant={getMuiVariant()}
+      size={size}
+      fullWidth={fullWidth}
+      color="primary"
+      className={`${getCustomClass()} ${className}`}
       {...props}
     >
       {children}
-    </button>
+    </StyledButton>
   );
 };
+
+export { PrimaryButton };
+export default PrimaryButton;
